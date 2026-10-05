@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bingo des doctorants</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EEF1F8; --surface:#FFFFFF; --ink:#18214D; --muted:#5B6490; --line:#CBD2E6;
+  --idle:#DCE0EC; --idle-ink:#4A5170;
+  --ball:#FFC93C; --ball-ink:#18214D;
+  --yes:#1E9E5A; --no:#D2353B; --on-color:#FFFFFF; --accent:#3B4CCA;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#121838; --surface:#1C2452; --ink:#F1F3FF; --muted:#A4ACD6; --line:#34407A;
+    --idle:#2A3366; --idle-ink:#C5CBEA; --accent:#9AA6FF;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#121838; --surface:#1C2452; --ink:#F1F3FF; --muted:#A4ACD6; --line:#34407A;
+  --idle:#2A3366; --idle-ink:#C5CBEA; --accent:#9AA6FF;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{height:100%; scroll-padding-top:env(safe-area-inset-top,0px)}
+body{height:100%; margin:0; background:var(--bg); color:var(--ink);
+  font-family:"Bricolage Grotesque",ui-rounded,"Segoe UI",system-ui,sans-serif; font-size:17px; line-height:1.4}
+#app{min-height:100%}
+h1,h2,h3,p{margin:0}
+button,input,select{font:inherit; color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--accent); outline-offset:2px}
+
+.btn{border:2px solid var(--ink); background:var(--surface); border-radius:999px; padding:.6em 1.2em; font-weight:600}
+.btn.primary{background:var(--ink); color:var(--bg)}
+.btn.quiet{border-color:var(--line); font-weight:400; color:var(--muted)}
+.btn.danger{border-color:var(--no); color:var(--no)}
+.link{background:none; border:0; padding:.3em 0; color:var(--accent); text-decoration:underline}
+
+.ball{display:inline-grid; place-items:center; flex:none; width:2.2em; height:2.2em; border-radius:50%;
+  background:var(--ball); color:var(--ball-ink); font-weight:800; line-height:1;
+  box-shadow:inset -.12em -.16em 0 rgba(24,33,77,.18)}
+
+/* ---------- accueil ---------- */
+.entry{max-width:34rem; margin:0 auto; padding:2.5rem 1.25rem; display:grid; gap:1.5rem}
+.entry h1{font-size:2.6rem; font-weight:800; line-height:1.05; letter-spacing:-.02em}
+.who{display:grid; gap:.6rem}
+.who button{text-align:left; padding:.9em 1.1em; border-radius:1rem; border:2px solid var(--ink);
+  background:var(--surface); font-size:1.15rem; font-weight:600}
+.entry .other{display:flex; flex-wrap:wrap; gap:.6rem; padding-top:1rem; border-top:2px dashed var(--line)}
+.note{color:var(--muted)}
+
+/* ---------- grille ---------- */
+.grid{display:grid; grid-template-columns:repeat(3,1fr); grid-auto-rows:1fr; gap:.4em}
+.cell{position:relative; display:flex; flex-direction:column; gap:.3em; text-align:left;
+  min-height:5.6em; padding:.5em; border-radius:.7em; border:3px solid transparent;
+  background:var(--idle); color:var(--idle-ink); overflow-wrap:anywhere}
+.cell .num{font-weight:800; font-size:1.05em; line-height:1}
+.cell .txt{font-size:.82em; line-height:1.2}
+.cell.ask{background:var(--surface); color:var(--ink); border-color:var(--ball)}
+.cell.yes{background:var(--yes); color:var(--on-color)}
+.cell.no{background:var(--no); color:var(--on-color)}
+.cell.yes::after,.cell.no::after{position:absolute; top:.3em; right:.5em; font-weight:800}
+.cell.yes::after{content:"✓"} .cell.no::after{content:"✕"}
+.cell.sel{outline:3px solid var(--ink); outline-offset:2px}
+.cell.hot{box-shadow:0 0 0 .22em var(--ball)}
+button.cell:disabled{cursor:default; opacity:1}
+
+/* ---------- joueur ---------- */
+.player{max-width:30rem; margin:0 auto; padding:1rem 1rem 2rem; display:grid; gap:1rem}
+.player header{display:flex; align-items:baseline; justify-content:space-between; gap:1rem}
+.player h1{font-size:1.6rem; font-weight:800}
+.now{display:flex; align-items:center; gap:.8rem; padding:.8rem 1rem; border-radius:1rem; background:var(--surface)}
+.now .ball{font-size:1.5rem}
+.ask-panel{padding:1rem; border-radius:1rem; background:var(--surface); border:3px solid var(--ball); display:grid; gap:.8rem}
+.ask-panel .q{font-size:1.2rem; font-weight:600}
+.ask-panel .choices{display:grid; grid-template-columns:1fr 1fr; gap:.6rem}
+.choice{border:0; border-radius:.9rem; padding:1em .5em; font-weight:800; font-size:1.1rem; color:var(--on-color)}
+.choice.y{background:var(--yes)} .choice.n{background:var(--no)}
+.bingo-banner{padding:.8rem 1rem; border-radius:1rem; background:var(--ball); color:var(--ball-ink); font-weight:800; font-size:1.4rem; text-align:center}
+
+/* ---------- projection ---------- */
+.stage{min-height:100%; display:flex; flex-direction:column; gap:1em; padding:1em 1.4em; font-size:clamp(14px,1.25vw,26px)}
+.stage-top{display:flex; align-items:center; gap:1.2em; flex-wrap:wrap}
+.stage-top h1{font-size:1.5em; font-weight:800; margin-right:auto}
+.draw{display:flex; align-items:center; gap:1em; padding:.8em 1.2em; border-radius:1.4em; background:var(--surface)}
+.draw .ball{font-size:3em}
+.draw .txt{font-size:1.9em; font-weight:800; line-height:1.1; letter-spacing:-.01em}
+.draw .txt small{display:block; font-size:.45em; font-weight:400; color:var(--muted); letter-spacing:0}
+.cards{flex:1; display:grid; gap:1em; grid-template-columns:repeat(auto-fit,minmax(15em,1fr)); align-content:start}
+.card{background:var(--surface); border-radius:1.2em; padding:.8em; display:grid; gap:.6em; border:.25em solid transparent}
+.card.won{border-color:var(--ball)}
+.card h2{font-size:1.3em; font-weight:800; display:flex; align-items:center; gap:.5em; justify-content:space-between}
+.stamp{background:var(--ball); color:var(--ball-ink); border-radius:999px; padding:.1em .7em; font-size:.8em; transform:rotate(-4deg)}
+.board{display:flex; flex-wrap:wrap; gap:.4em; align-items:center}
+.board .lbl{color:var(--muted); margin-right:.4em}
+.board button{border:0; padding:0; background:none; border-radius:50%}
+.board .ball.off{background:transparent; color:var(--muted); box-shadow:inset 0 0 0 2px var(--line)}
+.board .tools{margin-left:auto; display:flex; gap:.5em; font-size:.75em}
+
+/* ---------- préparation ---------- */
+.setup{max-width:52rem; margin:0 auto; padding:1.5rem 1rem 6rem; display:grid; gap:2rem}
+.setup h1{font-size:2rem; font-weight:800}
+.setup h2{font-size:1.3rem; font-weight:800; margin-bottom:.6rem}
+.setup input,.setup select{width:100%; min-width:0; padding:.5em .7em; border-radius:.6rem; border:2px solid var(--line); background:var(--surface)}
+.row{display:flex; gap:.5rem; align-items:center; margin-bottom:.4rem}
+.row .ball{font-size:.9rem}
+.x{border:0; background:none; color:var(--muted); font-size:1.3rem; padding:0 .3em}
+.pl{background:var(--surface); border-radius:1rem; padding:1rem; margin-bottom:1rem; display:grid; gap:.7rem}
+.pl .grid3{display:grid; grid-template-columns:repeat(3,1fr); gap:.4rem}
+.savebar{position:fixed; left:0; right:0; bottom:0; padding:.8rem 1rem calc(.8rem + env(safe-area-inset-bottom,0px));
+  background:var(--bg); border-top:2px solid var(--line); display:flex; gap:.6rem; justify-content:center; flex-wrap:wrap}
+.err{color:var(--no); font-weight:600}
+
+.toast{position:fixed; left:50%; bottom:calc(1.2rem + env(safe-area-inset-bottom,0px)); transform:translateX(-50%);
+  background:var(--ink); color:var(--bg); padding:.7em 1.2em; border-radius:1rem; max-width:90vw; z-index:20}
+.center{min-height:60vh; display:grid; place-items:center; text-align:center; padding:2rem; color:var(--muted)}
+
+.confetti{position:fixed; inset:0; pointer-events:none; overflow:hidden; z-index:30}
+.confetti i{position:absolute; top:-3vh; width:.8vw; min-width:8px; height:1.6vw; min-height:14px; animation:fall 2.6s ease-in forwards}
+@keyframes fall{to{transform:translateY(110vh) rotate(720deg)}}
+@media (prefers-reduced-motion: reduce){ .confetti{display:none} }
+</style>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script>
+/* ====== À REMPLIR : configuration de ton projet Firebase ======
+   Console Firebase > Paramètres du projet > Tes applications > Configuration.
+   databaseURL est indispensable (Realtime Database). */
+var FIREBASE_CONFIG = {
+  apiKey: "A_COLLER",
+  authDomain: "A_COLLER.firebaseapp.com",
+  databaseURL: "https://A_COLLER-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "A_COLLER",
+  appId: "A_COLLER"
+};
+</script>
+</head>
+<body>
+<div id="app"><div class="center">Connexion à la partie…</div></div>
+<script>
+(function(){
+"use strict";
+var LINES=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+var app=document.getElementById("app");
+var db=null, dbState="loading";            // loading | ok | none
+var cfg=null, drawn=[], answers={};         // données partagées
+var got={cfg:false,state:false,ans:false};
+var view="entry", me=null, sel=null;        // état local
+var draft=null, setupErr="", resetArmed=false, knownWinners=null, toastTimer=null;
+
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
+function store(k,v){try{ if(v===undefined) return localStorage.getItem(k); if(v===null) localStorage.removeItem(k); else localStorage.setItem(k,v);}catch(e){} return null;}
+function toast(msg){var t=document.querySelector(".toast"); if(t) t.remove(); t=document.createElement("div"); t.className="toast"; t.setAttribute("role","status"); t.textContent=msg; document.body.appendChild(t); clearTimeout(toastTimer); toastTimer=setTimeout(function(){t.remove();},4500);}
+
+function toArr(x){ return Array.isArray(x)?x:(x&&typeof x==="object")?Object.keys(x).map(function(k){return x[k];}):[]; }
+function normCfg(d){
+  d=d||{};
+  var an=toArr(d.anecdotes), pl=toArr(d.players);
+  return {
+    title: typeof d.title==="string"&&d.title? d.title : "Bingo des doctorants",
+    anecdotes: an.filter(function(a){return a&&typeof a.n==="number";}).map(function(a){return {n:a.n,text:String(a.text||"")};}),
+    players: pl.filter(function(p){return p&&p.id;}).map(function(p){return {id:String(p.id),name:String(p.name||""),grid:toArr(p.grid).slice(0,9)};})
+  };
+}
+function textOf(n){ if(!cfg) return ""; for(var i=0;i<cfg.anecdotes.length;i++) if(cfg.anecdotes[i].n===n) return cfg.anecdotes[i].text; return ""; }
+function player(id){ if(!cfg) return null; for(var i=0;i<cfg.players.length;i++) if(cfg.players[i].id===id) return cfg.players[i]; return null; }
+function status(p,n){
+  if(drawn.indexOf(n)<0) return "idle";
+  var a=(answers[p.id]||{})["n"+n];
+  return a==="yes"?"yes":a==="no"?"no":"ask";
+}
+function hasBingo(p){
+  return LINES.some(function(l){return l.every(function(i){return p.grid[i]!=null && status(p,p.grid[i])==="yes";});});
+}
+function current(){ return drawn.length? drawn[drawn.length-1] : null; }
+
+/* ---------- écritures (une à la fois par document) ---------- */
+var queues={};
+function enqueue(key,fn){ var run=function(){return fn();}; queues[key]=(queues[key]||Promise.resolve()).then(run,run); return queues[key]; }
+function refused(e){
+  if(e&&/PERMISSION_DENIED/i.test(String(e.code||e.message||""))) toast("Écriture refusée par la base : vérifie les règles de la Realtime Database dans Firebase.");
+  else toast("La partie est injoignable pour l'instant. Réessaie dans un instant.");
+}
+function setAnswer(pid,n,v){
+  var mine=Object.assign({},answers[pid]||{}); mine["n"+n]=v; answers=Object.assign({},answers); answers[pid]=mine; render();
+  db.ref("answers/"+pid+"/n"+n).set(v||null).catch(refused);
+}
+function setDrawn(list){
+  drawn=list; render();
+  db.ref("state").set({drawn:list}).catch(refused);
+}
+function resetGame(){
+  drawn=[]; answers={}; render();
+  db.ref("state").set({drawn:[]}).catch(refused);
+  db.ref("answers").remove().catch(refused);
+}
+
+/* ---------- rendu ---------- */
+function cellHtml(p,i,opts){
+  var n=p.grid[i], st=n==null?"idle":status(p,n);
+  var cls="cell "+st+(opts.sel===n?" sel":"")+(opts.hot&&n===current()?" hot":"");
+  var inner='<span class="num">'+(n==null?"":n)+'</span><span class="txt">'+esc(n==null?"":textOf(n))+'</span>';
+  var label=(n==null?"":"Numéro "+n+", "+textOf(n)+", ")+({idle:"pas encore tiré",ask:"à répondre",yes:"oui",no:"non"}[st]);
+  return '<button class="'+cls+'" data-act="'+opts.act+'" data-p="'+esc(p.id)+'" data-n="'+n+'" aria-label="'+esc(label)+'"'+(st==="idle"?" disabled":"")+'>'+inner+'</button>';
+}
+function gridHtml(p,opts){ var h='<div class="grid">'; for(var i=0;i<9;i++) h+=cellHtml(p,i,opts); return h+'</div>'; }
+
+function renderEntry(){
+  var h='<main class="entry"><h1>'+esc(cfg.title)+'</h1>';
+  if(cfg.players.length){
+    h+='<p>Choisis ta grille pour jouer depuis ton téléphone.</p><div class="who">';
+    cfg.players.forEach(function(p){ h+='<button data-act="be" data-p="'+esc(p.id)+'">'+esc(p.name||"Sans nom")+'</button>'; });
+    h+='</div>';
+  } else {
+    h+='<p>Aucune grille pour l\'instant. Commence par créer les anecdotes et les grilles des doctorants.</p>';
+  }
+  h+='<div class="other"><button class="btn" data-act="host">Écran de projection et tirage</button><button class="btn quiet" data-act="setup">Préparer les grilles</button></div></main>';
+  return h;
+}
+
+function pickSel(p){
+  if(sel!=null && p.grid.indexOf(sel)>=0 && drawn.indexOf(sel)>=0) return sel;
+  for(var i=drawn.length-1;i>=0;i--){ if(p.grid.indexOf(drawn[i])>=0 && status(p,drawn[i])==="ask") return drawn[i]; }
+  return null;
+}
+function renderPlayer(){
+  var p=player(me); if(!p){ view="entry"; me=null; store("bingo-role",null); return renderEntry(); }
+  var cur=current(), s=pickSel(p);
+  var h='<main class="player"><header><h1>'+esc(p.name)+'</h1><button class="link" data-act="leave">Changer de grille</button></header>';
+  if(hasBingo(p)) h+='<div class="bingo-banner" role="status">Bingo ! Tu as une ligne.</div>';
+  if(cur==null) h+='<div class="now"><span>En attente du premier tirage.</span></div>';
+  else h+='<div class="now"><span class="ball">'+cur+'</span><span>'+esc(textOf(cur))+(p.grid.indexOf(cur)<0?'<br><span class="note">Ce numéro n\'est pas dans ta grille.</span>':'')+'</span></div>';
+  h+=gridHtml(p,{act:"pick",sel:s});
+  if(s!=null){
+    h+='<div class="ask-panel"><div style="display:flex;gap:.7rem;align-items:center"><span class="ball">'+s+'</span><span class="q">'+esc(textOf(s))+'</span></div>'+
+       '<div class="choices"><button class="choice y" data-act="ans" data-n="'+s+'" data-v="yes">Oui, ça m\'est arrivé</button>'+
+       '<button class="choice n" data-act="ans" data-n="'+s+'" data-v="no">Non, jamais</button></div></div>';
+  } else if(cur!=null){
+    h+='<p class="note">Ta grille est à jour. Touche une case déjà tirée pour changer ta réponse.</p>';
+  }
+  return h+'</main>';
+}
+
+function renderHost(){
+  var cur=current();
+  var h='<main class="stage"><div class="stage-top"><h1>'+esc(cfg.title)+'</h1>';
+  h+='<div class="draw" aria-live="polite">'+(cur==null
+      ? '<div class="txt">En attente du premier tirage<small>Clique sur le numéro tiré, en bas de l\'écran.</small></div>'
+      : '<span class="ball">'+cur+'</span><div class="txt">'+esc(textOf(cur))+'<small>Ça vous est déjà arrivé ?</small></div>')+'</div></div>';
+  h+='<div class="cards">';
+  cfg.players.forEach(function(p){
+    var won=hasBingo(p);
+    h+='<section class="card'+(won?" won":"")+'"><h2><span>'+esc(p.name)+'</span>'+(won?'<span class="stamp">Bingo !</span>':'')+'</h2>'+gridHtml(p,{act:"cycle",hot:true})+'</section>';
+  });
+  if(!cfg.players.length) h+='<p class="note">Aucune grille enregistrée.</p>';
+  h+='</div><div class="board"><span class="lbl">Numéros</span>';
+  cfg.anecdotes.slice().sort(function(a,b){return a.n-b.n;}).forEach(function(a){
+    var on=drawn.indexOf(a.n)>=0;
+    h+='<button data-act="draw" data-n="'+a.n+'" aria-pressed="'+on+'" title="'+esc(a.text)+'"><span class="ball'+(on?"":" off")+'">'+a.n+'</span></button>';
+  });
+  h+='<span class="tools"><button class="btn '+(resetArmed?"danger":"quiet")+'" data-act="reset">'+(resetArmed?"Confirmer : tout effacer":"Nouvelle partie")+'</button>'+
+     '<button class="btn quiet" data-act="setup">Préparer les grilles</button><button class="btn quiet" data-act="leave">Quitter</button></span></div></main>';
+  return h;
+}
+
+function renderSetup(){
+  var d=draft, h='<main class="setup"><h1>Préparer les grilles</h1>';
+  h+='<section><h2>Titre affiché</h2><input data-k="title" value="'+esc(d.title)+'" aria-label="Titre affiché"></section>';
+  h+='<section><h2>Anecdotes</h2><p class="note" style="margin-bottom:.8rem">Chaque anecdote porte un numéro, celui que le prof tirera. Une même anecdote peut figurer dans plusieurs grilles.</p>';
+  d.anecdotes.forEach(function(a,i){
+    h+='<div class="row"><span class="ball">'+a.n+'</span><input data-k="an" data-i="'+i+'" value="'+esc(a.text)+'" placeholder="Il s\'est déjà…" aria-label="Anecdote '+a.n+'"><button class="x" data-act="delAn" data-i="'+i+'" aria-label="Supprimer l\'anecdote '+a.n+'">×</button></div>';
+  });
+  h+='<button class="btn" data-act="addAn">Ajouter une anecdote</button></section>';
+  h+='<section><h2>Doctorants</h2>';
+  d.players.forEach(function(p,pi){
+    h+='<div class="pl"><div class="row"><input data-k="pn" data-i="'+pi+'" value="'+esc(p.name)+'" placeholder="Prénom" aria-label="Prénom du doctorant"><button class="x" data-act="delPl" data-i="'+pi+'" aria-label="Supprimer ce doctorant">×</button></div><div class="grid3">';
+    for(var c=0;c<9;c++){
+      h+='<select data-k="g" data-i="'+pi+'" data-c="'+c+'" aria-label="Case '+(c+1)+'"><option value="">—</option>';
+      d.anecdotes.forEach(function(a){ var t=a.text.length>34?a.text.slice(0,33)+"…":a.text; h+='<option value="'+a.n+'"'+(p.grid[c]===a.n?" selected":"")+'>'+a.n+'. '+esc(t)+'</option>'; });
+      h+='</select>';
+    }
+    h+='</div><div><button class="link" data-act="rand" data-i="'+pi+'">Remplir au hasard</button></div></div>';
+  });
+  h+='<button class="btn" data-act="addPl">Ajouter un doctorant</button></section>';
+  if(setupErr) h+='<p class="err" role="alert">'+esc(setupErr)+'</p>';
+  h+='<div class="savebar"><button class="btn primary" data-act="save">Enregistrer les grilles</button><button class="btn quiet" data-act="back">Retour</button></div></main>';
+  return h;
+}
+
+function checkWinners(){
+  if(!(got.cfg&&got.state&&got.ans)) return;
+  var now={}; cfg.players.forEach(function(p){ if(hasBingo(p)) now[p.id]=1; });
+  if(knownWinners && view==="host"){ for(var id in now){ if(!knownWinners[id]){ confetti(); break; } } }
+  knownWinners=now;
+}
+function confetti(){
+  var box=document.createElement("div"); box.className="confetti"; var cols=["#FFC93C","#1E9E5A","#3B4CCA","#D2353B","#FFFFFF"];
+  for(var i=0;i<70;i++){ var c=document.createElement("i"); c.style.left=(Math.random()*100)+"%"; c.style.background=cols[i%cols.length]; c.style.animationDelay=(Math.random()*0.8)+"s"; c.style.animationDuration=(2+Math.random()*1.6)+"s"; box.appendChild(c); }
+  document.body.appendChild(box); setTimeout(function(){box.remove();},4500);
+}
+
+function render(){
+  if(dbState==="loading"){ return; }
+  if(dbState==="none"){ app.innerHTML='<div class="center"><p>La base de données n\'est pas encore branchée.<br>Renseigne FIREBASE_CONFIG en haut du fichier index.html.</p></div>'; return; }
+  if(dbState==="denied"){ app.innerHTML='<div class="center"><p>La base refuse la lecture.<br>Vérifie les règles de la Realtime Database dans Firebase.</p></div>'; return; }
+  if(!got.cfg){ app.innerHTML='<div class="center">Chargement des grilles…</div>'; return; }
+  checkWinners();
+  if(view==="setup"){ app.innerHTML=renderSetup(); return; }
+  app.innerHTML = view==="player"?renderPlayer(): view==="host"?renderHost(): renderEntry();
+  document.title=cfg.title;
+}
+function renderLive(){ if(view!=="setup") render(); }
+
+/* ---------- actions ---------- */
+function openSetup(){
+  draft=JSON.parse(JSON.stringify({title:cfg.title,anecdotes:cfg.anecdotes,players:cfg.players}));
+  draft.players.forEach(function(p){ while(p.grid.length<9) p.grid.push(null); });
+  setupErr=""; view="setup"; render(); window.scrollTo(0,0);
+}
+function saveSetup(){
+  var d=draft, errs=[], nums=d.anecdotes.map(function(a){return a.n;});
+  d.anecdotes.forEach(function(a){ if(!a.text.trim()) errs.push("L'anecdote "+a.n+" est vide."); });
+  d.players.forEach(function(p,i){
+    var nm=p.name.trim()||("Doctorant "+(i+1));
+    if(!p.name.trim()) errs.push("Le doctorant "+(i+1)+" n'a pas de prénom.");
+    var g=p.grid.filter(function(n){return n!=null&&nums.indexOf(n)>=0;});
+    if(g.length<9) errs.push(nm+" : il manque "+(9-g.length)+" case(s).");
+    else if(new Set(g).size<9) errs.push(nm+" : une anecdote apparaît deux fois.");
+  });
+  if(errs.length){ setupErr=errs.slice(0,4).join(" "); render(); return; }
+  var out={title:d.title.trim()||"Bingo des doctorants",
+    anecdotes:d.anecdotes.map(function(a){return {n:a.n,text:a.text.trim()};}),
+    players:d.players.map(function(p){return {id:p.id,name:p.name.trim(),grid:p.grid.slice(0,9)};})};
+  setupErr="";
+  enqueue("cfg",function(){
+    return db.ref("config").set(out).then(function(){ cfg=normCfg(out); toast("Grilles enregistrées"); view=me?"player":"entry"; if(store("bingo-role")==="host") view="host"; render(); }, refused);
+  });
+}
+
+app.addEventListener("click",function(ev){
+  var b=ev.target.closest("[data-act]"); if(!b) return;
+  var act=b.dataset.act, n=b.dataset.n!==undefined?Number(b.dataset.n):null, i=b.dataset.i!==undefined?Number(b.dataset.i):null;
+  if(act!=="reset") resetArmed=false;
+  switch(act){
+    case "be": me=b.dataset.p; view="player"; sel=null; store("bingo-role",me); render(); break;
+    case "host": me=null; view="host"; store("bingo-role","host"); render(); break;
+    case "leave": me=null; view="entry"; store("bingo-role",null); render(); break;
+    case "setup": openSetup(); break;
+    case "back": view=store("bingo-role")==="host"?"host":(me?"player":"entry"); render(); break;
+    case "pick": sel=n; render(); break;
+    case "ans": sel=null; setAnswer(me,n,b.dataset.v); break;
+    case "cycle": { var p=player(b.dataset.p); if(!p) break; var st=status(p,n); setAnswer(p.id,n, st==="ask"?"yes": st==="yes"?"no":""); break; }
+    case "draw": { var k=drawn.indexOf(n); setDrawn(k<0? drawn.concat([n]) : drawn.filter(function(x){return x!==n;})); break; }
+    case "reset": if(resetArmed){ resetArmed=false; resetGame(); } else { resetArmed=true; render(); } break;
+    case "addAn": { var mx=draft.anecdotes.reduce(function(m,a){return Math.max(m,a.n);},0); draft.anecdotes.push({n:mx+1,text:""}); render(); var ins=app.querySelectorAll('input[data-k="an"]'); if(ins.length) ins[ins.length-1].focus(); break; }
+    case "delAn": { var gone=draft.anecdotes[i].n; draft.anecdotes.splice(i,1); draft.players.forEach(function(p){ p.grid=p.grid.map(function(x){return x===gone?null:x;}); }); render(); break; }
+    case "addPl": draft.players.push({id:"p"+Math.random().toString(36).slice(2,9),name:"",grid:[null,null,null,null,null,null,null,null,null]}); render(); break;
+    case "delPl": draft.players.splice(i,1); render(); break;
+    case "rand": {
+      var pool=draft.anecdotes.map(function(a){return a.n;});
+      if(pool.length<9){ setupErr="Il faut au moins 9 anecdotes pour remplir une grille."; render(); break; }
+      for(var j=pool.length-1;j>0;j--){ var r=Math.floor(Math.random()*(j+1)), t=pool[j]; pool[j]=pool[r]; pool[r]=t; }
+      draft.players[i].grid=pool.slice(0,9); setupErr=""; render(); break; }
+    case "save": saveSetup(); break;
+  }
+});
+app.addEventListener("input",function(ev){
+  var t=ev.target, k=t.dataset&&t.dataset.k; if(!k||!draft) return;
+  var i=Number(t.dataset.i);
+  if(k==="title") draft.title=t.value;
+  else if(k==="an") draft.anecdotes[i].text=t.value;
+  else if(k==="pn") draft.players[i].name=t.value;
+  else if(k==="g") draft.players[i].grid[Number(t.dataset.c)]= t.value===""?null:Number(t.value);
+});
+app.addEventListener("change",function(ev){
+  var t=ev.target; if(view==="setup" && t.dataset && t.dataset.k==="an") render();   // met à jour les libellés des listes
+});
+
+/* ---------- connexion ---------- */
+function fail(){ dbState="denied"; render(); }
+function isNum(n){ return typeof n==="number"; }
+function start(){
+  if(!window.firebase || /A_COLLER/.test(FIREBASE_CONFIG.apiKey+FIREBASE_CONFIG.databaseURL)){ dbState="none"; render(); return; }
+  try{ firebase.initializeApp(FIREBASE_CONFIG); db=firebase.database(); }catch(e){ dbState="none"; render(); return; }
+  dbState="ok";
+  var role=store("bingo-role"); if(role==="host") view="host"; else if(role){ me=role; view="player"; }
+  render();
+  db.ref("config").on("value",function(s){ cfg=normCfg(s.val()); got.cfg=true; renderLive(); },fail);
+  db.ref("state").on("value",function(s){ var x=s.val(); drawn=toArr(x&&x.drawn).filter(isNum); got.state=true; renderLive(); },fail);
+  db.ref("answers").on("value",function(s){ var x=s.val()||{}, a={}; Object.keys(x).forEach(function(k){ a[k]=(x[k]&&typeof x[k]==="object")?x[k]:{}; }); answers=a; got.ans=true; renderLive(); },fail);
+}
+start();
+})();
+</script>
+</body>
+</html>
