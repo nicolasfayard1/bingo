@@ -133,11 +133,8 @@ button.cell:disabled{cursor:default; opacity:1}
    Console Firebase > Paramètres du projet > Tes applications > Configuration.
    databaseURL est indispensable (Realtime Database). */
 var FIREBASE_CONFIG = {
-  apiKey: "A_COLLER",
-  authDomain: "A_COLLER.firebaseapp.com",
-  databaseURL: "https://A_COLLER-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "A_COLLER",
-  appId: "A_COLLER"
+  databaseURL: "https://bingo-f5901-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "bingo-f5901"
 };
 </script>
 </head>
@@ -386,7 +383,7 @@ app.addEventListener("change",function(ev){
 function fail(){ dbState="denied"; render(); }
 function isNum(n){ return typeof n==="number"; }
 function start(){
-  if(!window.firebase || /A_COLLER/.test(FIREBASE_CONFIG.apiKey+FIREBASE_CONFIG.databaseURL)){ dbState="none"; render(); return; }
+  if(!window.firebase || /A_COLLER/.test(String(FIREBASE_CONFIG.databaseURL))){ dbState="none"; render(); return; }
   try{ firebase.initializeApp(FIREBASE_CONFIG); db=firebase.database(); }catch(e){ dbState="none"; render(); return; }
   dbState="ok";
   var role=store("bingo-role"); if(role==="host") view="host"; else if(role){ me=role; view="player"; }
